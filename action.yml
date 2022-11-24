@@ -18,6 +18,9 @@ inputs:
   gh-token:
     description: "Gitlab access token"
     required: true
+  image-tag:
+    description: "Docker image tag"
+    required: false
 runs:
   using: "composite"
   steps:
