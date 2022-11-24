@@ -1,0 +1,44 @@
+name: "Trigger deployment pipeline"
+description: "Trigger deployment pipeline"
+outputs:
+  result:
+    description: "Status code of the trigger deployment request"
+    value: ${{ steps.execute-curl.outputs.result }}
+inputs:
+  repository:
+    description: "Repository to deploy"
+    required: true
+  environment:
+    description: "Environment (develop|staging|production)"
+    required: true
+    default: "develop"
+  gh-trigger-url:
+    description: "Gitlab trigger url"
+    required: true
+  gh-token:
+    description: "Gitlab access token"
+    required: true
+runs:
+  using: "composite"
+  steps:
+    - id: execute-curl
+      run: |
+        result=$(curl -X POST \
+            -F token="${{ inputs.gh-token }}" \
+            -F ref=master \
+            -F "variables[RUN_DEPLOY]=1" \
+            -F "variables[ENVIRONMENT]=${{ inputs.environment }}" \
+            -F "variables[REPOSITORY]=${{ github.repository }}" \
+            -F "variables[IMAGE_TAG]=${{ inputs.image-tag }}" \
+            -o /dev/null \
+            --silent \
+            --write-out '%{http_code}' \
+            ${{ inputs.gh-trigger-url }})
+
+        echo "result=${result}" >> $GITHUB_OUTPUT
+
+        if [[ $result != "201" ]]; then
+            echo "Failed to trigger Gitlab pipeline: $result"
+            exit 1
+          fi
+      shell: bash
